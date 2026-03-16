@@ -3,7 +3,96 @@ import bcrypt from "bcryptjs"
 import User from "../models/User.js"
 import Office from "../models/Office.js"
 
-/* LOGIN ADMIN (WEB) */
+/* ─────────────────────────────
+   VERIFICAR SI EXISTE SUPERADMIN
+───────────────────────────── */
+
+export const superAdminExists = async (req,res)=>{
+  try{
+
+    const exists = await User.exists({ rol: "SUPERADMIN" })
+
+    res.json({
+      exists: !!exists
+    })
+
+  }catch(error){
+    res.status(500).json({ message:"Error verificando superadmin" })
+  }
+}
+
+
+/* ─────────────────────────────
+   CREAR PRIMER SUPERADMIN
+───────────────────────────── */
+
+export const createFirstSuperAdmin = async (req,res)=>{
+  try{
+
+    const { nombre,email,password } = req.body
+
+    const exists = await User.exists({ rol:"SUPERADMIN" })
+
+    if(exists){
+      return res.status(400).json({
+        message:"Ya existe un SuperAdmin"
+      })
+    }
+
+    const hash = await bcrypt.hash(password,10)
+
+    const user = await User.create({
+      nombre,
+      email,
+      password:hash,
+      rol:"SUPERADMIN"
+    })
+
+    res.json({
+      message:"SuperAdmin creado correctamente",
+      user
+    })
+
+  }catch(error){
+    res.status(500).json({ message:"Error creando superadmin" })
+  }
+}
+
+
+/* ─────────────────────────────
+   CREAR OTRO SUPERADMIN
+   Solo si ya hay uno logueado
+───────────────────────────── */
+
+export const createSuperAdmin = async (req,res)=>{
+  try{
+
+    const { nombre,email,password } = req.body
+
+    const hash = await bcrypt.hash(password,10)
+
+    const user = await User.create({
+      nombre,
+      email,
+      password:hash,
+      rol:"SUPERADMIN"
+    })
+
+    res.json({
+      message:"Nuevo SuperAdmin creado",
+      user
+    })
+
+  }catch(error){
+    res.status(500).json({ message:"Error creando superadmin" })
+  }
+}
+
+
+/* ─────────────────────────────
+   LOGIN ADMIN (WEB)
+───────────────────────────── */
+
 export const loginAdmin = async (req, res) => {
   try {
     const { email, password, slug } = req.body
@@ -12,6 +101,7 @@ export const loginAdmin = async (req, res) => {
 
     if (slug) {
       const office = await Office.findOne({ slug })
+
       if (!office) {
         return res.status(404).json({ message: "Oficina no encontrada" })
       }
@@ -21,7 +111,7 @@ export const loginAdmin = async (req, res) => {
 
     const user = await User.findOne({ email, ...officeFilter })
 
-    if (!user || user.rol !== "admin") {
+    if (!user || user.rol !== "ADMIN") {
       return res.status(401).json({ message: "Credenciales incorrectas" })
     }
 
@@ -56,16 +146,24 @@ export const loginAdmin = async (req, res) => {
   }
 }
 
-/* LOGIN COBRADOR (MOBILE) */
+
+/* ─────────────────────────────
+   LOGIN COBRADOR (MOBILE)
+───────────────────────────── */
+
 export const loginCobrador = async (req, res) => {
   try {
     const { email, password, slug } = req.body
 
-    // Verificar oficina si viene el slug
     let officeFilter = {}
+
     if (slug) {
       const office = await Office.findOne({ slug })
-      if (!office) return res.status(404).json({ message: "Oficina no encontrada" })
+
+      if (!office){
+        return res.status(404).json({ message: "Oficina no encontrada" })
+      }
+
       officeFilter = { officeId: office._id }
     }
 
@@ -98,20 +196,27 @@ export const loginCobrador = async (req, res) => {
   }
 }
 
-/* ─────────────────────────────────────────
+
+/* ─────────────────────────────
    LOGIN SUPERADMIN
-   Sin slug, sin oficina
-───────────────────────────────────────── */
+───────────────────────────── */
+
 export const loginSuperAdmin = async (req, res) => {
   try {
+
     const { email, password } = req.body
 
     const user = await User.findOne({ email, rol: "SUPERADMIN" })
 
-    if (!user) return res.status(401).json({ message: "Credenciales incorrectas" })
+    if (!user){
+      return res.status(401).json({ message: "Credenciales incorrectas" })
+    }
 
     const isValid = await bcrypt.compare(password, user.password)
-    if (!isValid) return res.status(401).json({ message: "Credenciales incorrectas" })
+
+    if (!isValid){
+      return res.status(401).json({ message: "Credenciales incorrectas" })
+    }
 
     const token = jwt.sign(
       { userId: user._id, rol: user.rol },
@@ -119,7 +224,14 @@ export const loginSuperAdmin = async (req, res) => {
       { expiresIn: "12h" }
     )
 
-    res.json({ token })
+    res.json({
+      token,
+      user:{
+        id:user._id,
+        nombre:user.nombre,
+        rol:user.rol
+      }
+    })
 
   } catch (error) {
     res.status(500).json({ message: "Error en login superadmin" })
