@@ -12,5 +12,5 @@ router.get("/", (req, res) => {
 router.post("/login-admin", loginAdmin)
 router.post("/login-cobrador", loginCobrador)
 router.post("/login-superadmin", loginSuperAdmin)
-
+router.post("/create-superadmin", createSuperAdmin)
 export default router

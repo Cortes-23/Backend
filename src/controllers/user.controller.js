@@ -1,5 +1,30 @@
 import User from "../models/User.js"
 
+
+
+export const createSuperAdmin = async (req, res) => {
+  try {
+    const user = new User({
+      nombre: "Super Admin",
+      cedula: "123456",
+      celular: "3000000000",
+      direccion: "Admin",
+      email: "admin@test.com",
+      password: "123456",
+      rol: "SUPERADMIN"
+    })
+
+    await user.save()
+
+    res.json({ message: "SuperAdmin creado" })
+
+  } catch (error) {
+    res.status(500).json(error)
+  }
+}
+
+
+
 /* CREAR USUARIO */
 export const crearUsuario = async (req, res) => {
   try {
