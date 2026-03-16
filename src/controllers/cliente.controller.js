@@ -4,30 +4,64 @@ import Cliente from "../models/Cliente.js"
    CREAR CLIENTE
    officeId viene del token JWT
 ───────────────────────────────────────── */
+import User from "../models/User.js"
+
 export const crearCliente = async (req, res) => {
   try {
+
     const { nombre, cedula, telefono, direccion, cobrador } = req.body
 
     if (!nombre || !cedula) {
-      return res.status(400).json({ message: "Nombre y cédula son obligatorios" })
+      return res.status(400).json({
+        message: "Nombre y cédula son obligatorios"
+      })
+    }
+
+    const cedulaNormalizada = cedula.trim()
+
+    let cobradorAsignado = req.user.userId
+
+    if (cobrador) {
+
+      const cobradorExiste = await User.findOne({
+        _id: cobrador,
+        officeId: req.user.officeId,
+        rol: "COBRADOR"
+      })
+
+      if (!cobradorExiste) {
+        return res.status(400).json({
+          message: "Cobrador inválido para esta oficina"
+        })
+      }
+
+      cobradorAsignado = cobrador
     }
 
     const nuevoCliente = await Cliente.create({
       nombre,
-      cedula,
+      cedula: cedulaNormalizada,
       telefono,
       direccion,
-      cobrador: cobrador || req.user.userId,
-      officeId: req.user.officeId   // ← aísla el cliente a esta oficina
+      cobrador: cobradorAsignado,
+      officeId: req.user.officeId
     })
 
-    return res.status(201).json(nuevoCliente)
+    res.status(201).json(nuevoCliente)
 
   } catch (error) {
+
+    console.error(error)
+
     if (error.code === 11000) {
-      return res.status(400).json({ message: "Ya existe un cliente con esa cédula en esta oficina" })
+      return res.status(400).json({
+        message: "Ya existe un cliente con esa cédula en esta oficina"
+      })
     }
-    return res.status(500).json({ message: "Error creando cliente" })
+
+    res.status(500).json({
+      message: "Error creando cliente"
+    })
   }
 }
 

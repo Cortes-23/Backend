@@ -7,35 +7,51 @@ const userSchema = new mongoose.Schema(
     cedula: { type: String, required: true },
     celular: { type: String, required: true },
     direccion: { type: String, required: true },
+
     email: {
       type: String,
       required: true,
       unique: true,
       trim: true,
-      lowercase: true
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, "Email inválido"]
     },
+
     password: { type: String, required: true },
+
     rol: {
       type: String,
-      enum: ["SUPERADMIN", "ADMIN", "COBRADOR"],  
+      enum: ["SUPERADMIN", "ADMIN", "COBRADOR"],
       required: true
     },
+
     habilitado: {
       type: Boolean,
       default: true
     },
+
     officeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Office",
-      default: null   //
+      default: null
     }
   },
   { timestamps: true }
 )
 
+/* ENCRIPTAR PASSWORD */
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return
   this.password = await bcrypt.hash(this.password, 10)
 })
+
+/* COMPARAR PASSWORD */
+userSchema.methods.comparePassword = async function (passwordIngresado) {
+  return await bcrypt.compare(passwordIngresado, this.password)
+}
+
+/* INDEX */
+userSchema.index({ email: 1 })
+userSchema.index({ officeId: 1 })
 
 export default mongoose.model("User", userSchema)

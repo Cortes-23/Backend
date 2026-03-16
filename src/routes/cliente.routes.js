@@ -9,13 +9,31 @@ import { verifyToken } from "../middlewares/auth.middleware.js"
 
 const router = express.Router()
 
-// Crear cliente (admin lo crea y le asigna cobrador)
-router.post("/", verifyToken, crearCliente)
+/* CREAR CLIENTE (ADMIN) */
+router.post("/", verifyToken, (req, res, next) => {
 
-// Obtener clientes del usuario logueado
+  if (req.user.rol !== "ADMIN") {
+    return res.status(403).json({ message: "No autorizado" })
+  }
+
+  next()
+
+}, crearCliente)
+
+
+/* CLIENTES DE UN COBRADOR (ADMIN) */
+router.get("/cobrador/:cobradorId", verifyToken, (req, res, next) => {
+
+  if (req.user.rol !== "ADMIN") {
+    return res.status(403).json({ message: "No autorizado" })
+  }
+
+  next()
+
+}, obtenerClientesPorCobrador)
+
+
+/* CLIENTES DEL USUARIO LOGUEADO */
 router.get("/", verifyToken, obtenerMisClientes)
-
-// Obtener clientes por cobrador (admin)
-router.get("/cobrador/:cobradorId", verifyToken, obtenerClientesPorCobrador)
 
 export default router

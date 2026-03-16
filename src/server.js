@@ -1,4 +1,3 @@
-
 import express from "express"
 import mongoose from "mongoose"
 import cors from "cors"
@@ -15,8 +14,22 @@ dotenv.config()
 
 const app = express()
 
-app.use(cors())
+/* CORS (IMPORTANTE para Vercel) */
+app.use(
+  cors({
+    origin: [
+      "*"
+    ],
+    credentials: true
+  })
+)
+
 app.use(express.json())
+
+/* RUTA DE PRUEBA */
+app.get("/", (req, res) => {
+  res.send("API de Cobros funcionando 🚀")
+})
 
 /* RUTAS */
 app.use("/api/auth", authRoutes)
@@ -26,18 +39,20 @@ app.use("/api/creditos", creditoRoutes)
 app.use("/api/oficinas", officeRoutes)
 app.use("/api/superadmin", superadminRoutes)
 
-/* CONEXION MONGODB */
-mongoose.connect(process.env.MONGO_URI)
-.then(() => {
-  console.log("✅ Conectado a MongoDB")
-})
-.catch((error) => {
-  console.log("❌ Error conectando MongoDB")
-  console.log(error)
-})
-
+/* PUERTO */
 const PORT = process.env.PORT || 5000
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
-})
+/* CONEXION MONGODB Y ARRANQUE DEL SERVER */
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ Conectado a MongoDB")
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
+    })
+  })
+  .catch((error) => {
+    console.log("❌ Error conectando MongoDB")
+    console.log(error)
+  })
