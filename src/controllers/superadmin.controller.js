@@ -7,23 +7,24 @@ export const createSuperAdmin = async (req, res) => {
 
     const { nombre, email, password } = req.body
 
-    const exist = await SuperAdmin.findOne({ email })
+    // verificar si ya existe un super admin
+    const count = await SuperAdmin.countDocuments()
 
-    if (exist) {
-      return res.status(400).json({
-        message: "El super admin ya existe"
+    if (count > 0) {
+      return res.status(403).json({
+        message: "Ya existe un Super Admin"
       })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const newSuperAdmin = new SuperAdmin({
+    const superAdmin = new SuperAdmin({
       nombre,
       email,
       password: hashedPassword
     })
 
-    await newSuperAdmin.save()
+    await superAdmin.save()
 
     res.json({
       message: "Super Admin creado correctamente"
